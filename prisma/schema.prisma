@@ -1,0 +1,188 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider          = "postgresql"
+  url               = env("DATABASE_URL")
+  shadowDatabaseUrl = env("SHADOW_DATABASE_URL")
+}
+
+// ============================================================
+// Better Auth core tables
+// All mapped to ft_* to avoid collisions with the shared
+// Personal Finance database on the same Neon instance.
+// ============================================================
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  emailVerified Boolean  @default(false)
+  image         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // FitTrack profile
+  avatarEmoji String  @default("💪")
+  timezone    String  @default("Asia/Kolkata")
+  goal        Goal    @default(MAINTAIN)
+  heightCm    Float?
+
+  sessions        Session[]
+  accounts        Account[]
+  habits          Habit[]
+  logs            DailyLog[]
+  notes           DailyNote[]
+  workoutSessions WorkoutSession[]
+  metrics         BodyMetric[]
+  earned          BadgeEarned[]
+
+  @@map("ft_users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("ft_sessions")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("ft_accounts")
+}
+
+model Verification {
+  id         String    @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+
+  @@map("ft_verifications")
+}
+
+// ============================================================
+// FitTrack domain tables
+// ============================================================
+
+enum Goal {
+  LOSE
+  GAIN
+  MAINTAIN
+}
+
+model Habit {
+  id         String     @id @default(cuid())
+  userId     String
+  name       String
+  emoji      String
+  category   String // movement | nutrition | recovery | mind
+  isMovement Boolean    @default(false) // counts toward weekly streak
+  sortOrder  Int
+  isActive   Boolean    @default(true) // archive, never delete
+  createdAt  DateTime   @default(now())
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs       DailyLog[]
+
+  @@unique([userId, name])
+  @@index([userId, isActive])
+  @@map("ft_habits")
+}
+
+model DailyLog {
+  id        String   @id @default(cuid())
+  userId    String
+  habitId   String
+  logDate   String // 'YYYY-MM-DD' in the user's timezone
+  value     Boolean // true=done, false=explicitly not done; NO ROW = not logged
+  loggedAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  habit     Habit    @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, logDate])
+  @@index([userId, logDate])
+  @@map("ft_daily_logs")
+}
+
+model DailyNote {
+  userId  String
+  logDate String
+  note    String @db.VarChar(280)
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, logDate])
+  @@map("ft_daily_notes")
+}
+
+model WorkoutSession {
+  id        String   @id @default(cuid())
+  userId    String
+  logDate   String
+  bodyParts String[]
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, logDate])
+  @@map("ft_workout_sessions")
+}
+
+model BodyMetric {
+  id         String @id @default(cuid())
+  userId     String
+  metricDate String
+  weightKg   Float?
+  waistCm    Float?
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, metricDate])
+  @@map("ft_body_metrics")
+}
+
+// NOTE: No WeekResult or StreakFreeze table — streaks are derived
+// on the fly from DailyLog (cheap, never stale, backdates are free).
+
+model BadgeDef {
+  code        String      @id
+  name        String
+  description String
+  rule        Json
+  isSecret    Boolean     @default(false)
+  earned      BadgeEarned[]
+
+  @@map("ft_badge_defs")
+}
+
+model BadgeEarned {
+  userId    String
+  badgeCode String
+  earnedOn  String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  badge     BadgeDef @relation(fields: [badgeCode], references: [code])
+
+  @@id([userId, badgeCode])
+  @@map("ft_badges_earned")
+}

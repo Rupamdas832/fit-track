@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FitTrack
 
-## Getting Started
+A mobile-first fitness habit tracker. Log five daily habits in under five seconds, earn weekly streaks, and share auto-generated recap posters.
 
-First, run the development server:
+## Stack
+
+| Layer      | Technology                                                   |
+| ---------- | ------------------------------------------------------------ |
+| Framework  | Next.js 16 (App Router, TypeScript strict)                   |
+| Auth       | Better Auth v1 — email + password, server-side session       |
+| Database   | Neon PostgreSQL (shared instance, all tables prefixed `ft_`) |
+| ORM        | Prisma 5                                                     |
+| Styling    | Tailwind CSS v4                                              |
+| Charts     | Recharts                                                     |
+| Date ops   | date-fns + date-fns-tz                                       |
+| Unit tests | Vitest                                                       |
+| E2E tests  | Playwright                                                   |
+
+## Prerequisites
+
+- Node.js 20+
+- A [Neon](https://neon.tech) PostgreSQL database
+
+## Setup
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Copy the example env file and fill in your credentials:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cp .env.example .env.local
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Required variables:
 
-## Learn More
+```
+DATABASE_URL=           # Neon connection string (pooled)
+SHADOW_DATABASE_URL=    # Neon connection string (direct, for migrations)
+BETTER_AUTH_SECRET=     # 32+ random chars — openssl rand -base64 32
+NEXT_PUBLIC_APP_URL=    # e.g. http://localhost:3000
+```
 
-To learn more about Next.js, take a look at the following resources:
+Push the schema and seed badge definitions:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run db:push
+npm run db:seed
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Development
 
-## Deploy on Vercel
+```bash
+npm run dev       # http://localhost:3000
+npm run lint      # ESLint
+npm run format    # Prettier
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Testing
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm test          # Vitest unit tests (streak engine, 28 tests)
+npm run test:e2e  # Playwright smoke test (requires a running dev or prod server)
+```
+
+The smoke test registers a fresh user, back-dates four movement logs into the previous completed Mon–Sun week, then asserts that `/streaks` shows a current streak of 1.
+
+For E2E against a production build:
+
+```bash
+npm run build && npm start &
+npm run test:e2e
+```
+
+## Architecture notes
+
+- **Streaks are stateless** — computed fresh from `DailyLog` on every read; no `WeekResult` table.
+- **Three-state logging** — `null` (not logged) · `true` (done) · `false` (skipped). Absence is never failure.
+- **Week rule** — Mon–Sun; 4+ distinct movement days = passed.
+- **Timezone-safe date ops** — all date arithmetic uses UTC noon (`T12:00:00Z`) to avoid DST boundary drift. User-local "today" is derived server-side via `date-fns-tz`.
+- **DB sharing** — all FitTrack tables use `@@map("ft_*")` to coexist on a shared Neon instance.
+- **Security** — every DB query is scoped by `userId` from the session; Zod validates all server action inputs; no secrets in client bundles.

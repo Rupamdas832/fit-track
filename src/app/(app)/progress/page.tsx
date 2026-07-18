@@ -9,7 +9,7 @@ import {
 import { getMilestones } from "@/server/services/milestones.service";
 import { MovementChart } from "@/components/MovementChart";
 import { WeightChart } from "@/components/WeightChart";
-import { todayFor } from "@/lib/dates";
+import { todayFor, formatDisplayDate } from "@/lib/dates";
 import { format } from "date-fns";
 import type { MilestoneProgress } from "@/server/services/milestones.service";
 
@@ -137,6 +137,13 @@ export default async function ProgressPage() {
         {weightData.length === 0 ? (
           <p className="text-muted py-4 text-center text-[13px]">
             No weigh-ins logged yet — add one from Profile.
+          </p>
+        ) : weightData.length === 1 ? (
+          <p className="text-muted py-4 text-center text-[13px]">
+            <span className="text-surface text-[20px] font-bold">{weightData[0]!.weightKg} kg</span>
+            <br />
+            logged {formatDisplayDate(weightData[0]!.date)} — log one more weigh-in to see a trend
+            line.
           </p>
         ) : (
           <>

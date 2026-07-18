@@ -24,14 +24,19 @@ export default async function TodayPage({
 
   const selectedDate = rawDate && !isFuture(rawDate, user.timezone) ? rawDate : today;
 
-  const [habits, logs, note, workoutSession, lastWorkout, weekStrip] = await Promise.all([
-    getActiveHabits(user.id),
-    getLogsForDate(user.id, selectedDate),
-    getDailyNote(user.id, selectedDate),
-    getWorkoutSession(user.id, selectedDate),
-    getLastWorkoutSession(user.id),
-    getWeekStripData(user.id, user.timezone),
-  ]);
+  const [habits, logs, note, workoutSession, lastWorkout, weekStrip, todayLogs] = await Promise.all(
+    [
+      getActiveHabits(user.id),
+      getLogsForDate(user.id, selectedDate),
+      getDailyNote(user.id, selectedDate),
+      getWorkoutSession(user.id, selectedDate),
+      getLastWorkoutSession(user.id),
+      getWeekStripData(user.id, user.timezone),
+      getLogsForDate(user.id, today),
+    ]
+  );
+
+  const workoutDoneToday = todayLogs.some((l) => l.habit.name === "Workout" && l.value === true);
 
   // Build log state map: habitId → value | null
   const initialLogs: Record<string, boolean | null> = {};
@@ -66,9 +71,10 @@ export default async function TodayPage({
         lastBodyParts={lastBodyParts}
         lastWorkoutDate={lastWorkout?.logDate ?? null}
         nextGroupIndex={nextGroupIndex}
+        workoutDoneToday={workoutDoneToday}
       />
 
-      <WeekStrip days={weekStrip.days} />
+      <WeekStrip days={weekStrip.days} selectedDate={selectedDate} />
 
       <TodayClient
         habits={habits}

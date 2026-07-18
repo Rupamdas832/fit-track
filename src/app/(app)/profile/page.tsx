@@ -4,14 +4,17 @@ import { archiveHabitAction, unarchiveHabitAction } from "@/server/actions/habit
 import { GoalSegment } from "@/components/GoalSegment";
 import { EditProfileForm } from "@/components/EditProfileForm";
 import { AddHabitForm } from "@/components/AddHabitForm";
+import { WeightLogForm } from "@/components/WeightLogForm";
 import { ExportButton } from "@/components/ExportButton";
 import { SignOutButton } from "@/components/SignOutButton";
 import { DeleteAccountButton } from "@/components/DeleteAccountButton";
+import { todayFor } from "@/lib/dates";
 import type { Goal } from "@prisma/client";
 
 export default async function ProfilePage() {
   const user = await requireUser();
   const habits = await getAllHabits(user.id);
+  const today = todayFor(user.timezone);
 
   const active = habits.filter((h) => h.isActive);
   const archived = habits.filter((h) => !h.isActive);
@@ -56,6 +59,15 @@ export default async function ProfilePage() {
         <p className="text-muted mt-[10px] text-[12px]">
           changes how your weight trend is read — nothing else judges you
         </p>
+      </div>
+
+      {/* Weigh-in */}
+      <div className="border-line bg-card mb-[14px] rounded-[26px] border p-4">
+        <h3 className="text-muted mb-1 text-[13px] font-bold tracking-widest uppercase">
+          weigh-in
+        </h3>
+        <p className="text-muted text-[12px]">weekly is plenty — feeds your progress trend</p>
+        <WeightLogForm today={today} />
       </div>
 
       {/* Habits */}

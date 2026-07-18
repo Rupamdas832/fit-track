@@ -20,9 +20,15 @@ interface FocusWidgetProps {
   lastBodyParts: string[];
   lastWorkoutDate: string | null;
   nextGroupIndex: number;
+  workoutDoneToday: boolean;
 }
 
-export function FocusWidget({ lastBodyParts, lastWorkoutDate, nextGroupIndex }: FocusWidgetProps) {
+export function FocusWidget({
+  lastBodyParts,
+  lastWorkoutDate,
+  nextGroupIndex,
+  workoutDoneToday,
+}: FocusWidgetProps) {
   const next = ROTATION_GROUPS[nextGroupIndex] ?? ROTATION_GROUPS[0];
   const lastGroup = lastBodyParts.length
     ? (ROTATION_GROUPS.find((g) =>
@@ -42,7 +48,7 @@ export function FocusWidget({ lastBodyParts, lastWorkoutDate, nextGroupIndex }: 
       </div>
       <div>
         <span className="text-lav text-[10.5px] font-bold tracking-[.14em] uppercase">
-          today&apos;s focus
+          {workoutDoneToday ? "tomorrow's focus" : "today's focus"}
         </span>
         <b className="block text-[15px]">{next.label}</b>
         <p className="text-muted mt-[3px] text-[12.5px] leading-[1.45]">

@@ -222,7 +222,7 @@ export function TodayClient({
         className="font-display w-full rounded-[20px] py-[17px] text-[14px] font-bold text-[#160F26] shadow-[0_8px_28px_rgba(255,107,53,.35)] transition-transform active:scale-[.98] disabled:opacity-60"
         style={{ background: "linear-gradient(90deg,#FF6B35,#FFC24B)" }}
       >
-        {saving ? "saving…" : "save today ✦"}
+        {saving ? "saving…" : selectedDate === today ? "save today ✦" : "save ✦"}
       </button>
 
       {/* Toast */}

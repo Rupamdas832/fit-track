@@ -24,6 +24,11 @@ export const UpsertBodyMetricSchema = z.object({
   waistCm: z.number().positive().nullable(),
 });
 
+export const LogWeightSchema = z.object({
+  metricDate: DateStringSchema,
+  weightKg: z.number().positive(),
+});
+
 export const CreateHabitSchema = z.object({
   name: z.string().min(1).max(50),
   emoji: z.string().min(1).max(4),

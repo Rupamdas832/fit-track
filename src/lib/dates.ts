@@ -7,6 +7,12 @@ export function todayFor(timezone: string): DateString {
   return formatInTimeZone(new Date(), timezone, "yyyy-MM-dd");
 }
 
+// Minutes since midnight, in the given timezone — e.g. 07:30 → 450.
+export function nowMinutesFor(timezone: string): number {
+  const [h, m] = formatInTimeZone(new Date(), timezone, "HH:mm").split(":").map(Number);
+  return h! * 60 + m!;
+}
+
 export function weekStartFor(date: DateString): DateString {
   const zonedDate = new Date(date + "T00:00:00");
   const weekStart = startOfWeek(zonedDate, { weekStartsOn: 1 }); // Monday

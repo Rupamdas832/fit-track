@@ -7,10 +7,12 @@ import {
   getLastWorkoutSession,
   getWeekStripData,
 } from "@/server/services/logs.service";
-import { todayFor, isFuture, getDayName, formatDisplayDate } from "@/lib/dates";
+import { todayFor, isFuture, getDayName, formatDisplayDate, nowMinutesFor } from "@/lib/dates";
 import { WeekStrip } from "@/components/WeekStrip";
 import { FocusWidget, getNextGroupIndex } from "@/components/FocusWidget";
+import { DietWidget } from "@/components/DietWidget";
 import { TodayClient } from "@/components/TodayClient";
+import { DIET_PLAN } from "@/lib/diet-plan";
 import { format } from "date-fns";
 
 export default async function TodayPage({
@@ -55,6 +57,9 @@ export default async function TodayPage({
   const dayLabel = getDayName(selectedDate);
   const weekNum = parseInt(format(new Date(selectedDate + "T00:00:00"), "w"), 10);
 
+  const todayName = getDayName(today);
+  const dietDay = user.goal === "GAIN" ? DIET_PLAN[todayName] : undefined;
+
   return (
     <>
       <h1 className="font-display mb-1 text-[22px] leading-tight font-bold tracking-tight">
@@ -73,6 +78,10 @@ export default async function TodayPage({
         nextGroupIndex={nextGroupIndex}
         workoutDoneToday={workoutDoneToday}
       />
+
+      {dietDay && (
+        <DietWidget dayLabel={todayName} day={dietDay} nowMinutes={nowMinutesFor(user.timezone)} />
+      )}
 
       <WeekStrip days={weekStrip.days} selectedDate={selectedDate} />
 
